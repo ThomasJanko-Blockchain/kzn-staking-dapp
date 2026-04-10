@@ -3,8 +3,14 @@ services:
     build:
       context: ./kzn-staking-frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SEPOLIA_RPC_URL: ${NEXT_PUBLIC_SEPOLIA_RPC_URL}
+        NEXT_PUBLIC_KZN_TOKEN_ADDRESS: ${NEXT_PUBLIC_KZN_TOKEN_ADDRESS}
+        NEXT_PUBLIC_KZN_STAKING_ADDRESS: ${NEXT_PUBLIC_KZN_STAKING_ADDRESS}
     ports:
       - "8432:3000"
-    env_file:
-      - ./kzn-staking-frontend/.env
+    environment:
+      NEXT_PUBLIC_SEPOLIA_RPC_URL: ${NEXT_PUBLIC_SEPOLIA_RPC_URL}
+      NEXT_PUBLIC_KZN_TOKEN_ADDRESS: ${NEXT_PUBLIC_KZN_TOKEN_ADDRESS}
+      NEXT_PUBLIC_KZN_STAKING_ADDRESS: ${NEXT_PUBLIC_KZN_STAKING_ADDRESS}
     restart: unless-stopped
