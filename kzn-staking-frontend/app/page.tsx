@@ -29,12 +29,13 @@ import { toast } from "sonner";
 
 function formatTokenAmount(value?: bigint) {
   if (value === undefined) return "0";
-  return Number(formatUnits(value, 18)).toLocaleString(undefined, {
+  return Number(formatUnits(value, 18)).toLocaleString("en-US", {
     maximumFractionDigits: 6,
   });
 }
 
 export default function Home() {
+  const [isMounted, setIsMounted] = useState(false);
   const [stakeInput, setStakeInput] = useState("");
   const [withdrawInput, setWithdrawInput] = useState("");
   const [currentAction, setCurrentAction] = useState<"approve" | "stake" | "claim" | "withdraw" | null>(null);
@@ -51,7 +52,7 @@ export default function Home() {
     isSuccess: isReceiptSuccess,
   } = useWaitForTransactionReceipt({ hash: txHash });
 
-  const connectedOnSepolia = isConnected && chainId === 11155111;
+  const connectedOnSepolia = isMounted && isConnected && chainId === 11155111;
   const selectedConnector = connectors[0];
   const txPending = isWriting || isConfirming;
 
@@ -116,6 +117,10 @@ export default function Home() {
   const hasTokenMismatch =
     Boolean(stakingTokenAddress) &&
     stakingTokenAddress!.toLowerCase() !== KZN_TOKEN_ADDRESS.toLowerCase();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([
@@ -277,14 +282,16 @@ export default function Home() {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Badge variant="secondary">Sepolia</Badge>
-              <Badge>{connectedOnSepolia ? "Network Ready" : "Switch Network"}</Badge>
+              <Badge>
+                {!isMounted ? "Checking Network" : connectedOnSepolia ? "Network Ready" : "Switch Network"}
+              </Badge>
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">Kaizen Staking Dashboard</h1>
             <p className="text-muted-foreground">
               Professional KZN staking interface with live balances and transaction controls.
             </p>
           </div>
-          {!isConnected ? (
+          {!isMounted || !isConnected ? (
             <Button
               onClick={() => {
                 if (!selectedConnector) return;
@@ -307,7 +314,7 @@ export default function Home() {
           )}
         </header>
 
-        {isConnected ? (
+        {isMounted && isConnected ? (
           <Alert className="border-white/30 bg-white/15 backdrop-blur-xl">
             <AlertTitle>Connected wallet</AlertTitle>
             <AlertDescription className="break-all">
