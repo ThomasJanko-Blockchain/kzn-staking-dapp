@@ -1,0 +1,10 @@
+services:
+  frontend:
+    build:
+      context: ./kzn-staking-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8432:3000"
+    env_file:
+      - ./kzn-staking-frontend/.env
+    restart: unless-stopped

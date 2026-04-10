@@ -89,6 +89,11 @@ export default function Home() {
     args: address ? [address] : undefined,
     query: { enabled: Boolean(address) },
   });
+  const { data: rewardPool, refetch: refetchRewardPool } = useReadContract({
+    address: KZN_STAKING_ADDRESS,
+    abi: stakingAbi,
+    functionName: "rewardPool",
+  });
 
   const { data: stakingTokenAddress } = useReadContract({
     address: KZN_STAKING_ADDRESS,
@@ -148,8 +153,9 @@ export default function Home() {
       refetchAllowance(),
       refetchUserInfo(),
       refetchRewards(),
+      refetchRewardPool(),
     ]);
-  }, [refetchAllowance, refetchBalance, refetchRewards, refetchUserInfo]);
+  }, [refetchAllowance, refetchBalance, refetchRewardPool, refetchRewards, refetchUserInfo]);
 
   function approve() {
     if (!connectedOnSepolia || stakeAmountWei <= BigInt(0)) {
@@ -224,6 +230,10 @@ export default function Home() {
       toast.error("No rewards available to claim yet.");
       return;
     }
+    if ((rewardPool ?? BigInt(0)) < (pendingRewards ?? BigInt(0))) {
+      toast.error("Claim unavailable: reward pool is currently insufficient.");
+      return;
+    }
     setCurrentAction("claim");
     void writeContractAsync({
       address: KZN_STAKING_ADDRESS,
@@ -243,7 +253,12 @@ export default function Home() {
   useEffect(() => {
     if (!isReceiptError || !receiptError) return;
     console.error("Transaction receipt error:", receiptError);
-    toast.error(receiptError.message.split("\n")[0] ?? "Failed to fetch transaction receipt.");
+    const reason = receiptError.message;
+    if (reason.includes("2pCk") || reason.includes("0x3270436b")) {
+      toast.error("Claim failed: insufficient reward pool in staking contract.");
+    } else {
+      toast.error(reason.split("\n")[0] ?? "Failed to fetch transaction receipt.");
+    }
     setCurrentAction(null);
     toast.dismiss("tx-status");
   }, [isReceiptError, receiptError]);
@@ -437,6 +452,10 @@ export default function Home() {
                     <Badge variant={(pendingRewards ?? BigInt(0)) > BigInt(0) ? "default" : "secondary"}>
                       {(pendingRewards ?? BigInt(0)) > BigInt(0) ? "Rewards Ready" : "No Rewards Yet"}
                     </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Reward pool</span>
+                    <span>{formatTokenAmount(rewardPool)} KZN</span>
                   </div>
                 </div>
               </div>
